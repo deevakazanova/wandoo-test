@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wandoo · тестовое задание — Нина Деева-Казанова</title>
+<style>
+  :root { --bg:#E9EBEC; --ink:#23262D; --lime:#D4FF5B; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html,body { height:100%; background:var(--bg); overflow:hidden;
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif; color:var(--ink);
+    -webkit-tap-highlight-color:transparent; user-select:none; }
+  .wrap { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; padding:16px 16px 72px; }
+  .stage { position:relative; aspect-ratio:1728/1117; width:min(100%, calc((100vh - 88px) * 1728 / 1117));
+    border-radius:18px; overflow:hidden; background:#F5F6F7; box-shadow:0 10px 40px rgba(35,38,45,.12); }
+  .slide { position:absolute; inset:0; opacity:0; visibility:hidden; transform:translateY(1.2%) scale(1.004);
+    transition:opacity .55s ease, transform .7s cubic-bezier(.2,.7,.2,1), visibility 0s linear .55s; }
+  .slide.on { opacity:1; visibility:visible; transform:none; transition:opacity .55s ease, transform .7s cubic-bezier(.2,.7,.2,1); }
+  .slide > img.bg { position:absolute; inset:0; width:100%; height:100%; display:block; }
+  /* phone screen overlay: x 1196, y 168, w 402, h 874 in 1728x1117 slide */
+  .screen { position:absolute; left:69.2130%; top:15.0403%; width:23.2639%; height:78.2453%;
+    overflow:hidden; border-radius:13.43% / 6.18%; }
+  .screen img { position:absolute; left:0; top:0; width:100%; display:block; }
+  .scroll { transition:transform 2.2s cubic-bezier(.45,0,.25,1); }
+  .frame { opacity:0; }
+  .frame.vis { opacity:1; }
+  .bar { position:fixed; left:0; right:0; bottom:0; height:64px; display:flex; align-items:center; justify-content:center; gap:14px; }
+  .btn { width:44px; height:44px; border-radius:22px; border:0; background:#fff; color:var(--ink); font-size:20px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+  .btn:active { transform:scale(.95); }
+  .count { min-width:72px; text-align:center; font-weight:600; font-size:15px; font-variant-numeric:tabular-nums; }
+  .prog { position:fixed; left:0; top:0; height:3px; background:var(--ink); transition:width .4s ease; }
+  .hint { position:fixed; bottom:20px; right:20px; font-size:12px; opacity:.5; }
+  @media (max-width:700px){ .hint{display:none} .wrap{padding:8px 8px 68px} .stage{border-radius:10px} }
+</style>
+</head>
+<body>
+<div class="prog" id="prog"></div>
+<div class="wrap"><div class="stage" id="stage"></div></div>
+<div class="bar">
+  <button class="btn" id="prev" aria-label="Назад">←</button>
+  <div class="count" id="count">1 / 15</div>
+  <button class="btn" id="next" aria-label="Вперёд">→</button>
+</div>
+<div class="hint">← → или тап по слайду</div>
+<script>
+(function(){
+  const N=15, stage=document.getElementById('stage');
+  const slides=[];
+  for(let i=1;i<=N;i++){
+    const s=document.createElement('section'); s.className='slide'; s.id='s'+i;
+    const img=document.createElement('img'); img.className='bg'; img.alt='Слайд '+i; img.src='img/s'+String(i).padStart(2,'0')+'.jpg';
+    s.appendChild(img);
+    if(i===11){
+      const sc=document.createElement('div'); sc.className='screen';
+      sc.innerHTML='<img class="scroll" src="img/p11-content.jpg" alt=""><img src="img/p11-fixed.png" alt="">';
+      s.appendChild(sc);
+    }
+    if(i===14){
+      const sc=document.createElement('div'); sc.className='screen';
+      for(let k=1;k<=10;k++){ const im=document.createElement('img'); im.className='frame'+(k===1?' vis':''); im.src='img/p14-'+String(k).padStart(2,'0')+'.webp'; im.alt=''; sc.appendChild(im); }
+      s.appendChild(sc);
+    }
+    stage.appendChild(s); slides.push(s);
+  }
+  // timings of the Figma prototype on slide 14: [hold before, transition]
+  const seq14=[[1.0,.55],[.4,.6],[.5,1.1],[.5,.6],[.5,1.1],[.5,.6],[.5,1.1],[.5,.6],[.5,1.1]];
+  let cur=0, timers=[];
+  const clear=()=>{ timers.forEach(clearTimeout); timers=[]; };
+  function resetAnims(){
+    const sc=slides[10].querySelector('.scroll'); sc.style.transition='none'; sc.style.transform='none'; void sc.offsetWidth; sc.style.transition='';
+    slides[13].querySelectorAll('.frame').forEach((f,k)=>{ f.style.transition='none'; f.classList.toggle('vis',k===0); });
+  }
+  function play(i){
+    if(i===10){
+      timers.push(setTimeout(()=>{
+        const box=slides[10].querySelector('.screen'), im=box.querySelector('.scroll');
+        const d=im.getBoundingClientRect().height-box.getBoundingClientRect().height;
+        im.style.transform='translateY(-'+Math.max(0,d)+'px)';
+      },1500));
+    }
+    if(i===13){
+      const fr=[...slides[13].querySelectorAll('.frame')]; let t=0;
+      seq14.forEach(([hold,dur],k)=>{ t+=hold*1000;
+        timers.push(setTimeout(()=>{ fr[k+1].style.transition='opacity '+dur+'s ease-in-out'; fr[k+1].classList.add('vis');
+          timers.push(setTimeout(()=>fr[k].classList.remove('vis'),dur*1000)); },t));
+        t+=dur*1000; });
+    }
+  }
+  function go(i){
+    i=Math.max(0,Math.min(N-1,i)); clear(); resetAnims();
+    slides.forEach((s,k)=>s.classList.toggle('on',k===i)); cur=i;
+    document.getElementById('count').textContent=(i+1)+' / '+N;
+    document.getElementById('prog').style.width=((i+1)/N*100)+'%';
+    try{ if(location.hash!=='#s'+(i+1)) history.replaceState(null,'','#s'+(i+1)); }catch(e){}
+    play(i);
+  }
+  document.getElementById('next').onclick=e=>{e.stopPropagation();go(cur+1)};
+  document.getElementById('prev').onclick=e=>{e.stopPropagation();go(cur-1)};
+  stage.addEventListener('click',e=>{ const r=stage.getBoundingClientRect(); (e.clientX-r.left<r.width*0.3)?go(cur-1):go(cur+1); });
+  document.addEventListener('keydown',e=>{
+    if(['ArrowRight','PageDown',' ','Enter'].includes(e.key)){e.preventDefault();go(cur+1)}
+    else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();go(cur-1)}
+    else if(e.key==='Home')go(0); else if(e.key==='End')go(N-1);
+  });
+  let sx=null,sy=null;
+  stage.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
+  stage.addEventListener('touchend',e=>{ if(sx===null)return; const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>40&&Math.abs(dx)>Math.abs(dy)){ e.preventDefault(); dx<0?go(cur+1):go(cur-1); } sx=null; });
+  window.addEventListener('hashchange',()=>{ const m=/^#s(\d+)$/.exec(location.hash); if(m&&+m[1]-1!==cur) go(+m[1]-1); });
+  const m=/^#s(\d+)$/.exec(location.hash); go(m?+m[1]-1:0);
+})();
+</script>
+</body>
+</html>
