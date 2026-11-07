@@ -12,11 +12,11 @@
     -webkit-tap-highlight-color:transparent; user-select:none; }
   .wrap { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; padding:16px 16px 72px; }
   .stage { position:relative; aspect-ratio:1728/1117; width:min(100%, calc((100vh - 88px) * 1728 / 1117));
-    border-radius:18px; overflow:hidden; background:#F5F6F7; box-shadow:0 10px 40px rgba(35,38,45,.12); }
-  .slide { position:absolute; inset:0; opacity:0; visibility:hidden; transform:translateY(1.2%) scale(1.004);
+    border-radius:18px; overflow:hidden; background:#F5F6F7; transition:background-color .55s ease; box-shadow:0 10px 40px rgba(35,38,45,.12); }
+  .slide { position:absolute; inset:0; opacity:0; visibility:hidden; transform:scale(1.015);
     transition:opacity .55s ease, transform .7s cubic-bezier(.2,.7,.2,1), visibility 0s linear .55s; }
   .slide.on { opacity:1; visibility:visible; transform:none; transition:opacity .55s ease, transform .7s cubic-bezier(.2,.7,.2,1); }
-  .slide > img.bg { position:absolute; inset:0; width:100%; height:100%; display:block; }
+  .slide > img.bg { position:absolute; inset:0; width:100%; height:100%; display:block; object-fit:cover; }
   /* phone screen overlay: x 1196, y 168, w 402, h 874 in 1728x1117 slide */
   .screen { position:absolute; left:69.2130%; top:15.0403%; width:23.2639%; height:78.2453%;
     overflow:hidden; border-radius:13.43% / 6.18%; }
@@ -89,7 +89,7 @@
   }
   function go(i){
     i=Math.max(0,Math.min(N-1,i)); clear(); resetAnims();
-    slides.forEach((s,k)=>s.classList.toggle('on',k===i)); cur=i;
+    slides.forEach((s,k)=>s.classList.toggle('on',k===i)); cur=i; stage.style.backgroundColor=(i===0?'#E2F7AC':'#F5F6F7');
     document.getElementById('count').textContent=(i+1)+' / '+N;
     document.getElementById('prog').style.width=((i+1)/N*100)+'%';
     try{ if(location.hash!=='#s'+(i+1)) history.replaceState(null,'','#s'+(i+1)); }catch(e){}
